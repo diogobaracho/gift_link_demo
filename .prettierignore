@@ -1,0 +1,12 @@
+node_modules
+dist
+build
+coverage
+playwright-report
+test-results
+package-lock.json
+*.min.*
+giftlink-frontend/public
+giftlink-backend/data/*.json
+.specify
+.claude
