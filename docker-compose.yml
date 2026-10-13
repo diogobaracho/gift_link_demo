@@ -1,0 +1,97 @@
+# GiftLink: production-like local stack.
+#   make up      # build + start everything (http://localhost:8080)
+#   make seed    # load demo data (one-shot container)
+#   make down    # stop (data kept in the mongo-data volume)
+name: giftlink
+
+x-backend-env: &backend-env
+  NODE_ENV: production
+  PORT: '3060'
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  MONGO_URL: mongodb://${MONGO_ROOT_USER:-root}:${MONGO_ROOT_PASSWORD:-example}@mongo:27017/?authSource=admin
+  MONGO_DB_NAME: ${MONGO_DB_NAME:-giftdb}
+  # Demo default only. Set a real secret in .env for anything public: openssl rand -hex 32
+  JWT_SECRET: ${JWT_SECRET:-local-demo-secret-change-me-0123456789}
+  JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+  SENTIMENT_URL: http://sentiment:3000
+  SENTIMENT_TIMEOUT_MS: '1500'
+  CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080,http://localhost:5173}
+  AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-100}
+
+services:
+  mongo:
+    # 8.2+: older 8.0.x builds refuse to start on Linux kernels >= 6.19 (SERVER-121912).
+    image: mongo:8.2
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-example}
+    ports:
+      - '${MONGO_PORT:-27017}:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  sentiment:
+    build:
+      context: .
+      dockerfile: sentiment/Dockerfile
+      target: runtime
+    image: giftlink-sentiment:local
+    restart: unless-stopped
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - '${SENTIMENT_PORT:-3000}:3000'
+
+  backend:
+    build:
+      context: .
+      dockerfile: giftlink-backend/Dockerfile
+      target: runtime
+    image: giftlink-backend:local
+    restart: unless-stopped
+    environment: *backend-env
+    ports:
+      - '${BACKEND_PORT:-3060}:3060'
+    depends_on:
+      mongo:
+        condition: service_healthy
+      sentiment:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: giftlink-frontend/Dockerfile
+      target: runtime
+    image: giftlink-frontend:local
+    restart: unless-stopped
+    environment:
+      API_UPSTREAM: http://backend:3060
+    ports:
+      - '${FRONTEND_PORT:-8080}:8080'
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # One-shot job: `make seed` / `make seed-reset` (profile keeps it out of `up`).
+  seed:
+    image: giftlink-backend:local
+    profiles: ['tools']
+    restart: 'no'
+    environment: *backend-env
+    command: ['node', 'dist/scripts/seed.js']
+    depends_on:
+      mongo:
+        condition: service_healthy
+      sentiment:
+        condition: service_healthy
+
+volumes:
+  mongo-data:

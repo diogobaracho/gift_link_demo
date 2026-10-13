@@ -1,0 +1,70 @@
+# Development overrides: hot reload inside containers, sources bind-mounted read-only.
+#   make dev   (= docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build)
+# Dependencies come from the image (Linux binaries), so the host's node_modules never
+# leak into the container.
+services:
+  sentiment:
+    build:
+      target: dev
+    image: giftlink-sentiment:dev
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./sentiment/src:/app/sentiment/src:ro
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      retries: 20
+
+  backend:
+    build:
+      target: dev
+    image: giftlink-backend:dev
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    volumes:
+      - ./giftlink-backend/src:/app/giftlink-backend/src:ro
+      - ./giftlink-backend/scripts:/app/giftlink-backend/scripts:ro
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3060/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      retries: 20
+
+  frontend:
+    build:
+      target: dev
+    image: giftlink-frontend:dev
+    environment:
+      VITE_PROXY_TARGET: http://backend:3060
+      # File events do not cross the VM boundary on macOS/Windows: poll instead.
+      CHOKIDAR_USEPOLLING: 'true'
+    ports: !override
+      - '5173:5173'
+    volumes:
+      - ./giftlink-frontend/src:/app/giftlink-frontend/src:ro
+      - ./giftlink-frontend/public:/app/giftlink-frontend/public:ro
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:5173/']
+      interval: 5s
+      retries: 20
+
+  seed:
+    build:
+      context: .
+      dockerfile: giftlink-backend/Dockerfile
+      target: dev
+    image: giftlink-backend:dev
+    command: ['npx', 'tsx', 'scripts/seed.ts']

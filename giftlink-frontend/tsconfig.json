@@ -1,0 +1,5 @@
+{
+  "// note": "Solution-style config: the browser app and the Node-side tooling have different libs.",
+  "files": [],
+  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
+}

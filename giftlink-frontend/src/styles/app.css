@@ -1,0 +1,120 @@
+/*
+ * GiftLink global styles: the course palette expressed as CSS custom properties,
+ * layered on top of Bootstrap 5.
+ */
+:root {
+  --gl-primary: #0056b3; /* strong, confident blue */
+  --gl-primary-hover: #00468f;
+  --gl-accent: #009688; /* teal */
+  --gl-bg: #f4f4f4;
+  --gl-surface: #ffffff;
+  --gl-text: #333333;
+  --gl-muted: #6c757d;
+  --gl-success: #198754;
+  --gl-warning: #b8860b;
+  --gl-radius: 10px;
+  --gl-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+  --bs-primary: var(--gl-primary);
+  --bs-link-color: var(--gl-primary);
+  --bs-link-hover-color: var(--gl-primary-hover);
+}
+
+html {
+  overflow-y: scroll; /* avoid layout shift when content grows past the fold */
+}
+
+body {
+  background-color: var(--gl-bg);
+  color: var(--gl-text);
+}
+
+.page-background {
+  min-height: calc(100vh - 56px);
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--gl-primary);
+  --bs-btn-border-color: var(--gl-primary);
+  --bs-btn-hover-bg: var(--gl-accent);
+  --bs-btn-hover-border-color: var(--gl-accent);
+  --bs-btn-active-bg: var(--gl-primary-hover);
+}
+
+/* --- Navbar ------------------------------------------------------------------------- */
+.navbar {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.navbar-brand {
+  font-weight: 700;
+  color: var(--gl-primary) !important;
+}
+
+.navbar .nav-link {
+  font-weight: 600;
+  color: var(--gl-primary);
+}
+
+.navbar .nav-link.active,
+.navbar .nav-link[aria-current='page'] {
+  color: #d63384;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* --- Cards -------------------------------------------------------------------------- */
+.product-card {
+  border: none;
+  border-radius: var(--gl-radius);
+  box-shadow: var(--gl-shadow);
+  overflow: hidden;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.image-placeholder {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  background: #ddd;
+}
+
+.image-placeholder img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.no-image-available {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 0.9rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.condition-new {
+  color: var(--gl-success);
+}
+
+.condition-used {
+  color: var(--gl-warning);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-card {
+    transition: none;
+  }
+}

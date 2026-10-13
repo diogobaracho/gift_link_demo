@@ -1,0 +1,30 @@
+/* Course SearchPage.css Tasks 1-5. */
+.filter-section {
+  background: var(--gl-surface);
+  border-radius: var(--gl-radius);
+  box-shadow: var(--gl-shadow);
+}
+
+.age-range-slider {
+  accent-color: var(--gl-primary);
+}
+
+.search-results-card {
+  border: none;
+  border-radius: var(--gl-radius);
+  box-shadow: var(--gl-shadow);
+  overflow: hidden;
+}
+
+.search-results-card .image-placeholder {
+  height: 100%;
+  min-height: 160px;
+}
+
+.search-results-card .description {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

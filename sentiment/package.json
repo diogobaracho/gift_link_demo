@@ -1,0 +1,39 @@
+{
+  "name": "sentiment",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GiftLink sentiment analysis microservice (AFINN via natural).",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "dist/src/server.js",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/src/server.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.19.1",
+    "@types/supertest": "^7.2.1",
+    "@vitest/coverage-v8": "^5.0.3",
+    "pino-pretty": "^13.2.0",
+    "supertest": "^7.3.1",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "helmet": "^8.3.0",
+    "natural": "^8.1.1",
+    "pino": "^10.4.0",
+    "pino-http": "^11.0.0"
+  }
+}

@@ -1,0 +1,7 @@
+.auth-card {
+  max-width: 440px;
+  margin: 3rem auto;
+  border: none;
+  border-radius: var(--gl-radius);
+  box-shadow: var(--gl-shadow);
+}

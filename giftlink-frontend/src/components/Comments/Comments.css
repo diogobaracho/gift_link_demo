@@ -1,0 +1,10 @@
+.comment-replies {
+  margin-left: 1.5rem;
+  padding-left: 1rem;
+  border-left: 3px solid #dee2e6;
+}
+
+.comment-text {
+  white-space: pre-wrap; /* keep the author's line breaks */
+  overflow-wrap: anywhere;
+}
