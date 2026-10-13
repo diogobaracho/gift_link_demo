@@ -18,3 +18,21 @@ From the user interface perspective, the application contain a home page, a list
   - Sentiment Analyzer Service
 
 TODO: Increment the arch docs
+
+## Application Screenshots
+
+You can explore the main GiftLink features without running the project by checking the screenshots below.
+
+### Home page
+
+![GiftLink home page](./_screenshots/01-landing-page.png)
+
+### Listings page
+
+![GiftLink listings page](./_screenshots/02-listings-page.png)
+
+### Gift details page
+
+![GiftLink gift details page](./_screenshots/04-gift-details-page.png)
+
+See the full screenshot gallery in [./_screenshots/README.md](./_screenshots/README.md).
