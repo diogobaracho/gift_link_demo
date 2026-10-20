@@ -17,7 +17,38 @@ From the user interface perspective, the application contain a home page, a list
   - Gifts Services
   - Sentiment Analyzer Service
 
-TODO: Increment the arch docs
+## Development Commands
+
+Run these commands from the repository root:
+
+```bash
+# Lint all workspaces
+npm run lint
+
+# Lint and auto-fix issues
+npm run lint:fix
+
+# Format all files with Prettier
+npm run format
+
+# Check formatting without changing files
+npm run format:check
+
+# Run TypeScript checks across workspaces
+npm run typecheck
+
+# Run tests across workspaces
+npm run test
+
+# Run tests with coverage across workspaces
+npm run test:coverage
+
+# Build all workspaces
+npm run build
+
+# Full validation (lint + format check + typecheck + coverage)
+npm run check
+```
 
 ## Application Screenshots
 

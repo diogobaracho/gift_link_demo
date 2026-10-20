@@ -43,6 +43,8 @@ export default defineConfig(
     },
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
@@ -92,6 +94,14 @@ export default defineConfig(
       // supertest's `request(app).get(...).expect(200)` (and helpers wrapping it) assert too.
       'vitest/expect-expect': ['error', { assertFunctionNames: ['expect', '**.expect'] }],
       '@typescript-eslint/no-non-null-assertion': 'off',
+    },
+  },
+
+  // Playwright config + E2E specs often use loosely typed fixtures.
+  {
+    files: ['e2e/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
     },
   },
 

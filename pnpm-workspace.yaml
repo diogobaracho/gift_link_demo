@@ -1,0 +1,8 @@
+packages:
+  - giftlink-backend
+  - sentiment
+  - giftlink-frontend
+allowBuilds:
+  '@scarf/scarf': false
+  esbuild: true
+  mongodb-memory-server: true
