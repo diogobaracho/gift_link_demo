@@ -50,6 +50,14 @@ npm run build
 npm run check
 ```
 
+## Security, deployment and CI/CD
+
+The repository is public: it holds `.env.example` templates, never secrets. Run `make env` and fill in the `CHANGE_ME` values before `make up`.
+
+- [Security guide](./docs/SECURITY.md): secrets handling, hardening, leak response
+- [Deployment guide](./docs/DEPLOYMENT.md): Docker Compose and Kubernetes on IBM Cloud
+- [GitHub CI/CD guide](./docs/CICD_GITHUB.md): best practices and step-by-step tutorial
+
 ## Application Screenshots
 
 You can explore the main GiftLink features without running the project by checking the screenshots below.

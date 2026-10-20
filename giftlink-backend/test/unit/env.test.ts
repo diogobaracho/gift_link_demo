@@ -17,7 +17,7 @@ describe('loadConfig', () => {
       mongo: { url: validEnv.MONGO_URL, dbName: 'giftdb' },
       jwt: { expiresIn: '1h' },
       sentiment: { url: undefined, timeoutMs: 1500 },
-      corsOrigins: ['http://localhost:5173', 'http://localhost:8080'],
+      corsOrigins: ['http://localhost:5173', 'http://localhost:9000'],
     });
   });
 
@@ -46,6 +46,13 @@ describe('loadConfig', () => {
     expect(attempt).toThrow(ConfigError);
     expect(attempt).toThrow(/MONGO_URL/);
     expect(attempt).toThrow(/JWT_SECRET: must be at least 16 characters/);
+  });
+
+  it('rejects .env.example placeholder secrets in production only', () => {
+    const placeholder = { ...validEnv, JWT_SECRET: 'CHANGE_ME_openssl_rand_hex_32' };
+
+    expect(() => loadConfig({ ...placeholder, NODE_ENV: 'production' })).toThrow(ConfigError);
+    expect(() => loadConfig(placeholder)).not.toThrow();
   });
 
   it('rejects malformed JWT expiry values', () => {

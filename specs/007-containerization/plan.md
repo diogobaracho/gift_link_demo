@@ -6,7 +6,7 @@
 
 Multi-stage builds from the monorepo root as the build context, so the npm workspaces
 lockfile is used. `npm ci -w <pkg>` installs, `tsc` builds, and the runtime stage has only
-production dependencies on `node:24-alpine` (running as user `node`). The frontend builds
+production dependencies on `node:24-bookworm-slim` (running as user `node`). The frontend builds
 static assets and serves them from `nginx:alpine`, with a SPA fallback and an `/api`
 reverse proxy (ADR-0009).
 

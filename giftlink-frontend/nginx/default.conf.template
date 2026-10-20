@@ -1,6 +1,6 @@
 # GiftLink nginx config. ${API_UPSTREAM} is substituted at container start.
 server {
-    listen 8080;
+    listen 9000;
     server_name _;
     root /usr/share/nginx/html;
     index index.html;

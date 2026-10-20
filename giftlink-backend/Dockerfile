@@ -5,10 +5,11 @@
 ARG NODE_VERSION=24
 
 # ---- base: shared settings ----------------------------------------------------------
-FROM node:${NODE_VERSION}-alpine AS base
+FROM node:${NODE_VERSION}-bookworm-slim AS base
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false \
     NPM_CONFIG_FUND=false \
-    NPM_CONFIG_AUDIT=false
+    NPM_CONFIG_AUDIT=false \
+    SCARF_ANALYTICS=false
 WORKDIR /app
 # The lockfile references every workspace, so all manifests must be present for `npm ci`.
 COPY package.json package-lock.json ./
@@ -18,8 +19,7 @@ COPY sentiment/package.json sentiment/
 
 # ---- deps: all dependencies (build + dev mode) -------------------------------------
 FROM base AS deps
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --workspace giftlink-backend --ignore-scripts
+RUN npm ci --workspace giftlink-backend --ignore-scripts
 
 # ---- dev: hot reload, sources bind-mounted by docker-compose.dev.yml -----------------
 FROM deps AS dev
@@ -37,13 +37,12 @@ RUN npm run build --workspace giftlink-backend
 
 # ---- prod-deps: runtime dependencies only ----------------------------------------------
 FROM base AS prod-deps
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --workspace giftlink-backend --omit=dev --ignore-scripts \
+RUN npm ci --workspace giftlink-backend --omit=dev --ignore-scripts \
     # Version conflicts nest some packages under the workspace; make the path always exist.
     && mkdir -p giftlink-backend/node_modules
 
 # ---- runtime: minimal, non-root --------------------------------------------------------
-FROM node:${NODE_VERSION}-alpine AS runtime
+FROM node:${NODE_VERSION}-bookworm-slim AS runtime
 ENV NODE_ENV=production \
     PORT=3060
 WORKDIR /app

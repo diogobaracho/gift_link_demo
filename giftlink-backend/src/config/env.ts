@@ -34,7 +34,7 @@ const envSchema = z.object({
   SENTIMENT_URL: z.url().optional(),
   SENTIMENT_TIMEOUT_MS: z.coerce.number().int().positive().default(1500),
 
-  CORS_ORIGIN: commaSeparatedList.default(['http://localhost:5173', 'http://localhost:8080']),
+  CORS_ORIGIN: commaSeparatedList.default(['http://localhost:5173', 'http://localhost:9000']),
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
 });
 
@@ -71,6 +71,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   }
 
   const e = parsed.data;
+  // Template values copied from `.env.example` must never run in production.
+  if (e.NODE_ENV === 'production' && /change[_-]?me/i.test(`${e.JWT_SECRET} ${e.MONGO_URL}`)) {
+    throw new ConfigError(
+      'Invalid environment configuration:\n  - JWT_SECRET/MONGO_URL: placeholder CHANGE_ME value in production',
+    );
+  }
   return {
     env: e.NODE_ENV,
     port: e.PORT,

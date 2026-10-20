@@ -4,10 +4,11 @@
 
 ARG NODE_VERSION=24
 
-FROM node:${NODE_VERSION}-alpine AS base
+FROM node:${NODE_VERSION}-bookworm-slim AS base
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false \
     NPM_CONFIG_FUND=false \
-    NPM_CONFIG_AUDIT=false
+    NPM_CONFIG_AUDIT=false \
+    SCARF_ANALYTICS=false
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY giftlink-backend/package.json giftlink-backend/
@@ -15,8 +16,7 @@ COPY giftlink-frontend/package.json giftlink-frontend/
 COPY sentiment/package.json sentiment/
 
 FROM base AS deps
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --workspace sentiment --ignore-scripts
+RUN npm ci --workspace sentiment --ignore-scripts
 
 FROM deps AS dev
 COPY tsconfig.base.json ./
@@ -31,12 +31,11 @@ COPY sentiment sentiment
 RUN npm run build --workspace sentiment
 
 FROM base AS prod-deps
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --workspace sentiment --omit=dev --ignore-scripts \
+RUN npm ci --workspace sentiment --omit=dev --ignore-scripts \
     # Version conflicts nest some packages under the workspace; make the path always exist.
     && mkdir -p sentiment/node_modules
 
-FROM node:${NODE_VERSION}-alpine AS runtime
+FROM node:${NODE_VERSION}-bookworm-slim AS runtime
 ENV NODE_ENV=production \
     PORT=3000 \
     # `natural` calls dotenv on import; silence its banner in the logs.

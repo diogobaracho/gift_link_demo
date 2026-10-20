@@ -21,7 +21,7 @@ export default defineConfig({
     ? [['list'], ['html', { open: 'never' }], ['github']]
     : [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:8080',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:9000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

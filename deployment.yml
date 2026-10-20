@@ -1,0 +1,336 @@
+# Render with envsubst so the registry namespace stays out of git, then apply:
+#   set -a; . ./.env; set +a
+#   envsubst '$REGISTRY_NAMESPACE' < deployment.yml | kubectl apply -f -
+# Secrets are NOT stored here. Create them from .env first (see docs/DEPLOYMENT.md):
+#   giftlink-secrets (JWT_SECRET, MONGO_URL), mongodb-secrets (root credentials), icr (pull secret).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: giftlink-config
+data:
+  NODE_ENV: 'production'
+  LOG_LEVEL: 'info'
+  BACKEND_PORT: '3060'
+  SENTIMENT_PORT: '3000'
+  JWT_EXPIRES_IN: '1h'
+  SENTIMENT_TIMEOUT_MS: '1500'
+  AUTH_RATE_LIMIT_MAX: '100'
+  MONGO_DB_NAME: 'giftdb'
+  # Update according to your public frontend URL(s).
+  CORS_ORIGIN: 'http://localhost:9000'
+  API_UPSTREAM: 'http://backend:3060'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      imagePullSecrets:
+        - name: icr
+      containers:
+        - name: backend
+          image: us.icr.io/${REGISTRY_NAMESPACE}/giftlink-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3060
+          env:
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: giftlink-config
+                  key: NODE_ENV
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: giftlink-config
+                  key: BACKEND_PORT
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: giftlink-config
+                  key: LOG_LEVEL
+            - name: JWT_EXPIRES_IN
+              valueFrom:
+                configMapKeyRef:
+                  name: giftlink-config
+                  key: JWT_EXPIRES_IN
+            - name: SENTIMENT_TIMEOUT_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: giftlink-config
+                  key: SENTIMENT_TIMEOUT_MS
+            - name: AUTH_RATE_LIMIT_MAX
+              valueFrom:
+                configMapKeyRef:
+                  name: giftlink-config
+                  key: AUTH_RATE_LIMIT_MAX
+            - name: CORS_ORIGIN
+              valueFrom:
+                configMapKeyRef:
+                  name: giftlink-config
+                  key: CORS_ORIGIN
+            - name: SENTIMENT_URL
+              value: 'http://sentiment:3000'
+            - name: MONGO_URL
+              valueFrom:
+                secretKeyRef:
+                  name: giftlink-secrets
+                  key: MONGO_URL
+            - name: MONGO_DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: giftlink-config
+                  key: MONGO_DB_NAME
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: giftlink-secrets
+                  key: JWT_SECRET
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: '100m'
+              memory: '192Mi'
+            limits:
+              cpu: '500m'
+              memory: '512Mi'
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3060
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3060
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: backend
+  ports:
+    - name: http
+      port: 3060
+      targetPort: 3060
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentiment
+  labels:
+    app: sentiment
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: sentiment
+  template:
+    metadata:
+      labels:
+        app: sentiment
+    spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      imagePullSecrets:
+        - name: icr
+      containers:
+        - name: sentiment
+          image: us.icr.io/${REGISTRY_NAMESPACE}/giftlink-sentiment:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: giftlink-config
+                  key: NODE_ENV
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: giftlink-config
+                  key: LOG_LEVEL
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: giftlink-config
+                  key: SENTIMENT_PORT
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: '50m'
+              memory: '96Mi'
+            limits:
+              cpu: '250m'
+              memory: '256Mi'
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentiment
+spec:
+  type: ClusterIP
+  selector:
+    app: sentiment
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: giftapp
+  labels:
+    app: giftapp
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: giftapp
+  template:
+    metadata:
+      labels:
+        app: giftapp
+    spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      imagePullSecrets:
+        - name: icr
+      volumes:
+        - name: nginx-conf
+          emptyDir: {}
+        - name: nginx-cache
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+      containers:
+        - name: frontend
+          image: us.icr.io/${REGISTRY_NAMESPACE}/giftlink-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 9000
+          env:
+            - name: API_UPSTREAM
+              valueFrom:
+                configMapKeyRef:
+                  name: giftlink-config
+                  key: API_UPSTREAM
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 101
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: '50m'
+              memory: '64Mi'
+            limits:
+              cpu: '200m'
+              memory: '256Mi'
+          # Root FS is read-only; nginx renders its config and writes temp/cache files at startup.
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: tmp
+              mountPath: /tmp
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gift-app-service
+spec:
+  type: NodePort
+  selector:
+    app: giftapp
+  ports:
+    - name: http
+      port: 80
+      targetPort: 9000
+      protocol: TCP

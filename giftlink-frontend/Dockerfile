@@ -4,10 +4,11 @@
 
 ARG NODE_VERSION=24
 
-FROM node:${NODE_VERSION}-alpine AS base
+FROM node:${NODE_VERSION}-bookworm-slim AS base
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false \
     NPM_CONFIG_FUND=false \
-    NPM_CONFIG_AUDIT=false
+    NPM_CONFIG_AUDIT=false \
+    SCARF_ANALYTICS=false
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY giftlink-backend/package.json giftlink-backend/
@@ -15,8 +16,7 @@ COPY giftlink-frontend/package.json giftlink-frontend/
 COPY sentiment/package.json sentiment/
 
 FROM base AS deps
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --workspace giftlink-frontend --ignore-scripts
+RUN npm ci --workspace giftlink-frontend --ignore-scripts
 
 # ---- dev: Vite dev server with HMR (sources bind-mounted) ------------------------------
 FROM deps AS dev
@@ -36,12 +36,13 @@ COPY giftlink-frontend giftlink-frontend
 RUN npm run build --workspace giftlink-frontend
 
 # ---- runtime: static files + /api reverse proxy ---------------------------------------
-FROM nginxinc/nginx-unprivileged:1.29-alpine AS runtime
+FROM nginxinc/nginx-unprivileged:1.29 AS runtime
 # nginx renders /etc/nginx/templates/*.template with envsubst at startup.
 ENV API_UPSTREAM=http://backend:3060
 COPY giftlink-frontend/nginx/default.conf.template /etc/nginx/templates/default.conf.template
+RUN mkdir -p /etc/nginx/snippets
 COPY giftlink-frontend/nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /app/giftlink-frontend/dist /usr/share/nginx/html
-EXPOSE 8080
+EXPOSE 9000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=5 \
-  CMD wget -qO- http://127.0.0.1:8080/healthz >/dev/null || exit 1
+  CMD wget -qO- http://127.0.0.1:9000/healthz >/dev/null || exit 1

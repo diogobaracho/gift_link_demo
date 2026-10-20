@@ -5,7 +5,7 @@ SHELL := /bin/bash
 COMPOSE     := docker compose
 COMPOSE_DEV := docker compose -f docker-compose.yml -f docker-compose.dev.yml
 # Host ports (override when busy, e.g. `make up FRONTEND_PORT=8088`); exported to compose.
-export FRONTEND_PORT  ?= 8080
+export FRONTEND_PORT  ?= 9000
 export BACKEND_PORT   ?= 3060
 export SENTIMENT_PORT ?= 3000
 FRONTEND_URL  := http://localhost:$(FRONTEND_PORT)
@@ -70,7 +70,7 @@ seed-local: ## Seed using local Node against MONGO_URL from giftlink-backend/.en
 	npm run seed --workspace giftlink-backend
 
 db-shell: ## Open mongosh on the giftdb database
-	$(COMPOSE) exec mongo mongosh -u $${MONGO_ROOT_USER:-root} -p $${MONGO_ROOT_PASSWORD:-example} --authenticationDatabase admin $${MONGO_DB_NAME:-giftdb}
+	$(COMPOSE) exec mongo sh -c 'mongosh -u "$$MONGO_INITDB_ROOT_USERNAME" -p "$$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin $${MONGO_DB_NAME:-giftdb}'
 
 ##@ Quality
 .PHONY: lint lint-fix format format-check typecheck check
